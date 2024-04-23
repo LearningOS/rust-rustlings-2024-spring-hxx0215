@@ -2,8 +2,8 @@
 	single linked list merge
 	This problem requires you to merge two ordered singly linked lists into one ordered singly linked list
 */
-// I AM NOT DONE
 
+use std::cmp::max;
 use std::fmt::{self, Display, Formatter};
 use std::ptr::NonNull;
 use std::vec::*;
@@ -29,13 +29,13 @@ struct LinkedList<T> {
     end: Option<NonNull<Node<T>>>,
 }
 
-impl<T> Default for LinkedList<T> {
+impl<T: Clone + PartialOrd> Default for LinkedList<T> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<T> LinkedList<T> {
+impl<T: Clone + PartialOrd> LinkedList<T> {
     pub fn new() -> Self {
         Self {
             length: 0,
@@ -69,14 +69,37 @@ impl<T> LinkedList<T> {
             },
         }
     }
-	pub fn merge(list_a:LinkedList<T>,list_b:LinkedList<T>) -> Self
-	{
-		//TODO
-		Self {
-            length: 0,
-            start: None,
-            end: None,
+	pub fn merge(list_a:LinkedList<T>,list_b:LinkedList<T>) -> Self{
+        let mut la = list_a;
+        let mut lb = list_b;
+        let lena:i32 = la.length as i32;
+        let lenb:i32 = lb.length as i32;
+        let mut result = Self::new();
+        let mut idxa = 0;
+        let mut idxb = 0;
+        while (idxa < lena) || (idxb < lenb){
+            match (la.get(idxa), lb.get(idxb)) {
+                (Some(ia),Some(ib)) => {
+                    if (ia < ib){
+                        result.add((*ia).clone());
+                        idxa = idxa + 1;
+                    }else{
+                        result.add((*ib).clone());
+                        idxb = idxb + 1;
+                    }
+                },
+                (Some(ia),None) => {
+                    result.add((*ia).clone());
+                    idxa = idxa + 1;
+                },
+                (None, Some(ib)) => {
+                    result.add((*ib).clone());
+                    idxb = idxb + 1;
+                },
+                (None,None) => ()
+            }
         }
+        result
 	}
 }
 

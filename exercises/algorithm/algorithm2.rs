@@ -2,9 +2,9 @@
 	double linked list reverse
 	This problem requires you to reverse a doubly linked list
 */
-// I AM NOT DONE
 
 use std::fmt::{self, Display, Formatter};
+use std::mem::swap;
 use std::ptr::NonNull;
 use std::vec::*;
 
@@ -31,13 +31,13 @@ struct LinkedList<T> {
     end: Option<NonNull<Node<T>>>,
 }
 
-impl<T> Default for LinkedList<T> {
+impl<T: Clone+ Display> Default for LinkedList<T> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<T> LinkedList<T> {
+impl<T: Clone+ Display> LinkedList<T> {
     pub fn new() -> Self {
         Self {
             length: 0,
@@ -59,6 +59,45 @@ impl<T> LinkedList<T> {
         self.length += 1;
     }
 
+
+    pub fn insert(&mut self,idx: i32, obj: T){
+        let currrent= self.get_node(idx);
+        if let Some(cur) = currrent{
+            let mut node = Box::new(Node::new(obj));
+            unsafe{
+                let prev = (*cur.as_ptr()).prev;
+                node.prev = prev;
+                node.next = Some(cur);    
+                let node_ptr = Some(NonNull::new_unchecked(Box::into_raw(node)));
+                if prev.is_none(){
+                    self.start = node_ptr;
+                }else{
+                    (*prev.unwrap().as_ptr()).next = node_ptr;
+                }
+                (*cur.as_ptr()).prev = node_ptr;
+            }
+        }else{
+            self.add(obj)
+        }
+        
+    }
+
+    pub fn get_node(&mut self, idx: i32) -> Option<NonNull<Node<T>>>{
+        self.get_ith_ptr(self.start, idx)
+    }
+
+    fn get_ith_ptr(&mut self,node: Option<NonNull<Node<T>>>,index: i32) -> Option<NonNull<Node<T>>> {
+        match node{
+            None => None,
+            Some(next_ptr) => match index {
+                0 => Some(next_ptr),
+                _ => self.get_ith_ptr(unsafe{(*next_ptr.as_ptr()).next},index - 1)
+                
+            }
+        }
+
+    }
+
     pub fn get(&mut self, index: i32) -> Option<&T> {
         self.get_ith_node(self.start, index)
     }
@@ -73,8 +112,33 @@ impl<T> LinkedList<T> {
         }
     }
 	pub fn reverse(&mut self){
-		// TODO
+        self.start = self.reverse_node(self.start);
 	}
+    fn reverse_node(&mut self,node: Option<NonNull<Node<T>>>) -> Option<NonNull<Node<T>>>{
+        match node {
+            None => None,
+            Some(ptr) => {
+                unsafe{
+                    let tail = (*ptr.as_ptr()).next;
+                    let reversed = self.reverse_node(tail);
+                    if let Some(r) = reversed{
+                       let mut h =  r;
+                       let mut t = (*r.as_ptr()).next;
+                       while t.is_some(){
+                        h = t.unwrap();
+                        t = (*h.as_ptr()).next;
+                       }
+                       (*h.as_ptr()).next = Some(ptr);
+                       (*ptr.as_ptr()).next = None;
+                       (*ptr.as_ptr()).prev = Some(h);
+                       reversed
+                    }else{
+                        Some(ptr)
+                    }
+                }
+            }
+        }
+    }
 }
 
 impl<T> Display for LinkedList<T>
@@ -156,4 +220,15 @@ mod tests {
 			assert_eq!(reverse_vec[i],*list.get(i as i32).unwrap());
 		}
 	}
+    #[test]
+    fn test_insert(){
+        let mut list = LinkedList::<i32>::new();
+        list.add(1);
+        list.add(2);
+        list.add(3);
+        list.insert(3, 4);
+        for i in 0..4{
+            println!("idx:{}, value:{}", i, list.get(i).unwrap())
+        }
+    }
 }
